@@ -1,222 +1,156 @@
 ```javascript
-let dataInfo = [{
-    name: "浮游植物",
-    category: 4, // 这是种类，一级实体1二级关系2三级关系3四级关系4
-    symbolSize: 50,
-    draggable: true,
-    fixed: true,
-    value: [0, 150]
-}, {
-    name: "虎鲸",
-    category: 0,
-    symbolSize: 50,
-    draggable: true,
-    fixed: true,
-    value: [600, 150]
-}, {
-    name: "磷虾",
-    category: 1,
-    value: [200, 200],
-    draggable: true,
-    fixed: true,
-    symbolSize: 50
-}, {
-    name: "浮游动物",
-    category: 1,
-    value: [200, 150],
-    draggable: true,
-    fixed: true,
-    symbolSize: 50
-}, {
-    name: "小鱼",
-    category: 1,
-    value: [200, 100],
-    draggable: false,
-    symbolSize: 50
-}, {
-    name: "须鲸",
-    category: 2,
-    symbolSize: 50,
-    draggable: false,
-    value: [300, 200]
-}, {
-    name: "大鱼",
-    category: 2,
-    symbolSize: 50,
-    draggable: false,
-    value: [300, 150]
-}, {
-    name: "海豹",
-    category: 2,
-    symbolSize: 50,
-    draggable: false,
-    value: [300, 100]
-}]
-let dataLink = [{
-    source: "浮游植物",
-    value: "132",
-    target: "磷虾",
-}, {
-    source: "磷虾",
-    value: "132",
-    target: "浮游植物",
-}, {
-    source: "浮游植物",
-    value: "778",
-    target: "浮游动物",
-}, {
-    source: "浮游植物",
-    value: "5354",
-    target: "小鱼",
-}, {
-    source: "须鲸",
-    value: "6677",
-    target: "虎鲸",
-}, {
-    source: "大鱼",
-    value: "3344",
-    target: "虎鲸",
-}, {
-    source: "海豹",
-    value: "2333",
-    target: "虎鲸",
-}, {
-    source: "磷虾",
-    value: "3737",
-    target: "须鲸",
-}, {
-    source: "浮游动物",
-    value: "6688",
-    target: "大鱼",
-}, {
-    source: "小鱼",
-    value: "7788",
-    target: "海豹",
-}, {
-    source: "大鱼",
-    value: "9933",
-    target: "海豹",
-}]
+var size = 60;
+var size1 = 30;
+var yy = 200;
+var yy1 = 250;
+
+var listdata = [];
+var links = [];
+
+var med = "药品";
+var ope = "操作";
+var che = "检查";
+
+//著需要设定一下四个参数
+//设定疾病名称
+var diease = "diease";
+//设定传入的药品数组
+var meds = ["med1", "med2", "med3", "med4"];
+//设定传入的操作数组
+var opes = ["ope1", "ope2", "ope3"];
+//设定传入的检查数组
+var ches = ["che1", "che2", "che3", "che4"];
+
+function setData(arr, n) {
+    for (var i = 0; i < arr.length; i++) {
+        listdata.push({
+            x: i * 50,
+            y: size + i * 10,
+            "name": arr[i],
+            "symbolSize": size,
+            "category": n,
+            "draggable": "true"
+        })
+    }
+}
+
+function setLinkData(arr, title) {
+    for (var i = 0; i < arr.length; i++) {
+        links.push({
+            "source": arr[i],
+            "target": title,
+            lineStyle: {
+                normal: {
+                    color: 'source',
+                }
+            }
+        })
+    }
+}
+
+var legendes = ["药物", "操作", "检查", "疾病"];
+var texts = [];
+for (var i = 0; i < legendes.length; i++) {
+    texts.push({
+        "name": legendes[i],
+    })
+}
+
+var cat1 = ["药物"];
+for (var i = 0; i < meds.length; i++) {
+    cat1.push(meds[i]);
+}
+var cat2 = ["操作"];
+for (var i = 0; i < opes.length; i++) {
+    cat2.push(opes[i]);
+}
+var cat3 = ["检查"];
+for (var i = 0; i < ches.length; i++) {
+    cat3.push(ches[i]);
+}
+var cat4 = [];
+cat4.push(diease);
+
+setData(cat1, 0);
+setData(cat2, 1);
+setData(cat3, 2);
+setData(cat4, 3);
+
+setLinkData(cat1, cat1[0]);
+setLinkData(cat2, cat2[0]);
+setLinkData(cat3, cat3[0]);
+setLinkData(legendes, cat4[0]);
+
 option = {
     title: {
-        text: "实体属性关系图",
+        text: "疾病知识图谱",
         top: "top",
-        left: "center"
+        left: "left",
+        textStyle: {
+            color: '#f7f7f7'
+        }
     },
-    itemStyle: {
-        normal: {
-            color: '#000',
+    tooltip: {
+        formatter: '{b}'
+    },
+    toolbox: {
+        show: true,
+        feature: {
+            restore: {
+                show: true
+            },
+            saveAsImage: {
+                show: true
+            }
+        }
+    },
+    backgroundColor: '#00000',
+    legend: {
+        data: legendes,
+        textStyle: {
+            color: '#fff'
         },
-        shadowBlur: 10
+        icon: 'circle',
+        type: 'scroll',
+        orient: 'vertical',
+        left: 10,
+        top: 20,
+        bottom: 20,
+        itemWidth: 10,
+        itemHeight: 10
     },
-    tooltip:{},
-    animationDuration: 1500,
+    animationDuration: 1000,
     animationEasingUpdate: 'quinticInOut',
-    xAxis: {
-        show: false,
-        type: 'value'
-    },
-    yAxis: {
-        show: false,
-        type: 'value'
-    },
     series: [{
+        name: '知识图谱',
         type: 'graph',
-        coordinateSystem: 'cartesian2d',
-        legendHoverLink: false,
-        hoverAnimation: true,
-        nodeScaleRatio: false,
-        //建头
-        edgeSymbol: ['circle', 'arrow'],
-        edgeSymbolSize: [2, 15],
-        edgeLabel: {
-            show: false,
-            normal: {
-                show: true,
-                position: 'middle',
-                textStyle: {
-                    fontSize: 12
-                },
-                formatter: "{c}"
-            }
+        layout: 'force',
+        force: {
+            repulsion: 60,
+            gravity: 0.1,
+            edgeLength: 15,
+            layoutAnimation: true,
         },
-        focusNodeAdjacency: false,
-        roam: true,
-        categories: [{
-            name: '一级关系',
-            itemStyle: { //可配置颜色
-                normal: {
-                    color: "red",
-                }
-            }
-        }, {
-            name: '二级关系',
-            itemStyle: { //可配置颜色
-                normal: {
-                    color: "#41B1EF",
-                }
-            }
-        }, {
-            name: '三级关系',
-            itemStyle: { //可配置颜色
-                normal: {
-                    color: "#E8B842",
-                }
-            }
-        }, {
-            name: '四级关系',
-            itemStyle: { //可配置颜色
-                normal: {
-                    color: "#667AED",
-                }
-            }
-        }],
-        //圆形上面的文字
+        data: listdata,
+        links: links,
+        categories: texts,
+        roam: false,
         label: {
             normal: {
-                position: "inside",
                 show: true,
-                textStyle: {
-                    color: '#fff',
-                    fontSize: 12
-                },
+                position: 'inside',
+                formatter: '{b}',
+                fontSize: 16,
+                fontStyle: '600',
             }
         },
-        force: {
-            repulsion: 1000,
-        },
-        // force: {
-        //     repulsion: 2500,
-
-        // },
-        itemStyle: {
+        lineStyle: {
             normal: {
-                color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [{
-                    offset: 0,
-                    color: '#157eff'
-                }, {
-                    offset: 1,
-                    color: '#35c2ff'
-                }]),
-            },
-            shadowBlur: 10
-        },
-        // lineStyle: {
-        //     normal: {
-        //         width: 1,
-        //         shadowColor: 'none',
-        //         color: '#0250FD'
-        //     },
-        // },
-               lineStyle: {
-                normal: {
-                    opacity: 0.9,
-                    width: 1,
-                    curveness: 0.1
-                }
-            },
-        data: dataInfo,
-        links: dataLink
+                opacity: 0.9,
+                width: 1.5,
+                curveness: 0
+            }
+        }
     }]
-}
+};
 ```
