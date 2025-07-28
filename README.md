@@ -1,175 +1,194 @@
 ```javascript
- var option = {
-     backgroundColor:'#323a5e',
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: { // 坐标轴指示器，坐标轴触发有效
-            type: 'shadow' // 默认为直线，可选为：'line' | 'shadow'
-          }
+var outname = ["南海诸岛", '北京', '天津', '上海', '重庆', '河北', '河南', '云南', '辽宁', '黑龙江', '湖南', '安徽', '山东', '新疆', '江苏', '浙江', '江西', '湖北', '广西', '甘肃', '山西', '内蒙古', '陕西', '吉林', '福建', '贵州', '广东', '青海', '西藏', '四川', '宁夏', '海南', '台湾', '香港', '澳门'];
+var outvalue = [0, 524, 13, 140, 75, 13, 83, 11, 19, 15, 69, 260, 39, 4, 31, 104, 36, 1052, 33, 347, 9, 157, 22, 4, 18, 5, 2398, 41, 0, 484, 404, 22, 3, 5, 225];
+var outdata = [];
+
+var max = 6000,
+    min = 10;
+var maxSize4Pin = 100,
+    minSize4Pin = 20;
+
+for (var i = 0; i < outname.length; i++) {
+    outdata.push({
+        name: outname[i],
+        value: outvalue[i]
+    })
+}
+
+var geoCoordMap = {};
+/*获取地图数据*/
+var mapFeatures = echarts.getMap('china').geoJson.features;
+//  console.log(mapFeatures)
+mapFeatures.forEach(function(v) {
+    console.info(v)
+    // 地区名称
+    var name = v.properties.name;
+    // 地区经纬度
+    geoCoordMap[name] = v.properties.cp;
+
+});
+var convertData = function(outdata) {
+    var res = [];
+    for (var i = 0; i < outdata.length; i++) {
+        var geoCoord = geoCoordMap[outdata[i].name];
+        if (geoCoord) {
+            res.push({
+                name: outdata[i].name,
+                value: geoCoord.concat(outdata[i].value),
+            });
+        }
+    }
+    return res;
+};
+
+option = {
+    backgroundColor: '#0F1C3C',
+    tooltip: {
+        show: true,
+        formatter: function(params) {
+            if (params.value.length > 1) {
+                return '&nbsp;&nbsp;' + params.name + '&nbsp;&nbsp;&nbsp;' + params.value[2] + '人&nbsp;&nbsp;';
+            } else {
+                return '&nbsp;&nbsp;' + params.name + '&nbsp;&nbsp;&nbsp;' + params.value + '人&nbsp;&nbsp;';
+            }
         },
-        grid: {
-          left: '2%',
-          right: '4%',
-          bottom: '14%',
-          top:'16%',
-          containLabel: true
-        },
-         legend: {
-        data: ['1', '2', '3'],
-        right: 10,
-        top:12,
-        textStyle: {
-            color: "#fff"
-        },
-        itemWidth: 12,
-        itemHeight: 10,
-        // itemGap: 35
+
     },
-        xAxis: {
-          type: 'category',
-          data: ['2012','2013','2014','2015','2016','2017','2018','2019'],
-          axisLine: {
-            lineStyle: {
-              color: 'white'
 
+    geo: {
+        map: 'china',
+        show: true,
+        roam: false,
+        label: {
+            emphasis: {
+                show: false
             }
-          },
-          axisLabel: {
-            // interval: 0,
-            // rotate: 40,
-            textStyle: {
-              fontFamily: 'Microsoft YaHei'
-            }
-          },
         },
-
-        yAxis: {
-          type: 'value',
-          max:'1200',
-          axisLine: {
-            show: false,
-            lineStyle: {
-              color: 'white'
-            }
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              color: 'rgba(255,255,255,0.3)'
-            }
-          },
-          axisLabel: {}
-        },
-        "dataZoom": [{
-          "show": true,
-          "height": 12,
-          "xAxisIndex": [
-            0
-          ],
-          bottom:'8%',
-          "start": 10,
-          "end": 90,
-          handleIcon: 'path://M306.1,413c0,2.2-1.8,4-4,4h-59.8c-2.2,0-4-1.8-4-4V200.8c0-2.2,1.8-4,4-4h59.8c2.2,0,4,1.8,4,4V413z',
-          handleSize: '110%',
-          handleStyle:{
-            color:"#d3dee5",
-
-          },
-          textStyle:{
-            color:"#fff"},
-          borderColor:"#90979c"
-        }, {
-          "type": "inside",
-          "show": true,
-          "height": 15,
-          "start": 1,
-          "end": 35
-        }],
-        series: [{
-          name: '1',
-          type: 'bar',
-          barWidth: '15%',
-          itemStyle: {
+        layoutSize: "100%",
+        itemStyle: {
             normal: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
+                borderColor: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
                     offset: 0,
-                    color: '#fccb05'
+                    color: '#00F6FF'
                 }, {
                     offset: 1,
-                    color: '#f5804d'
-                }]),
-                barBorderRadius: 12,
+                    color: '#53D9FF'
+                }], false),
+                borderWidth: 3,
+                shadowColor: 'rgba(10,76,139,1)',
+                shadowOffsetY: 0,
+                shadowBlur: 60
+            }
+        }
+    },
+    series: [{
+        type: 'map',
+        map: 'china',
+        aspectScale: 0.75,
+        //zoom:1.1,
+        label: {
+            normal: {
+                show: false,
             },
-          },
-          data: [400, 400, 300, 300, 300, 400, 400, 400, 300]
-        },
-        {
-          name: '2',
-          type: 'bar',
-          barWidth: '15%',
-          itemStyle: {
-            normal: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                    offset: 0,
-                    color: '#8bd46e'
-                }, {
-                    offset: 1,
-                    color: '#09bcb7'
-                }]),
-                barBorderRadius: 11,
+            emphasis: {
+                show: false,
             }
-            
-          },
-          data: [400, 500, 500, 500, 500, 400,400, 500, 500]
         },
-        {
-          name: '3',
-          type: 'bar',
-          barWidth: '15%',
-          itemStyle: {
+        itemStyle: {
             normal: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{
-                    offset: 0,
-                    color: '#248ff7'
-                }, {
-                    offset: 1,
-                    color: '#6851f1'
-                }]),
-            barBorderRadius: 11,
+                areaColor: {
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [{
+                        offset: 0,
+                        color: '#073684' // 0% 处的颜色
+                    }, {
+                        offset: 1,
+                        color: '#061E3D' // 100% 处的颜色
+                    }],
+                },
+                borderColor: '#215495',
+                borderWidth: 1,
+            },
+            emphasis: {
+                areaColor: {
+
+                    x: 0,
+                    y: 0,
+                    x2: 0,
+                    y2: 1,
+                    colorStops: [{
+                        offset: 0,
+                        color: '#073684' // 0% 处的颜色
+                    }, {
+                        offset: 1,
+                        color: '#061E3D' // 100% 处的颜色
+                    }],
+                },
             }
-          },
-          data: [400, 600, 700, 700, 1000, 400, 400, 600, 700]
-        }]
-      };
+        },
+        data: outdata,
+    }, {
+        type: 'effectScatter',
+        coordinateSystem: 'geo',
+        rippleEffect: {
+            brushType: 'stroke'
+        },
+        showEffectOn: 'render',
+        itemStyle: {
+            normal: {
+                color: {
+                    type: 'radial',
+                    x: 0.5,
+                    y: 0.5,
+                    r: 0.5,
+                    colorStops: [{
+                        offset: 0,
+                        color: 'rgba(5,80,151,0.2)'
+                    }, {
+                        offset: 0.8,
+                        color: 'rgba(5,80,151,0.8)'
+                    }, {
+                        offset: 1,
+                        color: 'rgba(0,108,255,0.7)'
+                    }],
+                    global: false // 缺省为 false
+                },
+            }
 
-      var app = {
-        currentIndex: -1,
-      };
-    //   setInterval(function () {
-    //     var dataLen = option.series[0].data.length;
+        },
+        label: {
+            normal: {
+                show: true,
+                color: '#fff',
+                fontWeight: 'bold',
+                position: 'inside',
+                formatter: function(para) {
+                    return '{cnNum|' + para.data.value[2] + '}'
+                },
+                rich: {
+                    cnNum: {
+                        fontSize: 13,
+                        color: '#D4EEFF',
+                    }
+                }
+            },
+        },
+        symbol: 'circle',
+        symbolSize: function(val) {
+            if (val[2] === 0) {
+                return 0;
+            }
+            var a = (maxSize4Pin - minSize4Pin) / (max - min);
+            var b = maxSize4Pin - a * max;
+            return a * val[2] + b * 1.2;
+        },
+        data: convertData(outdata),
+        zlevel: 1,
+    }]
+};
 
-    //     // 取消之前高亮的图形
-    //     myChart.dispatchAction({
-    //       type: 'downplay',
-    //       seriesIndex: 0,
-    //       dataIndex: app.currentIndex
-    //     });
-    //     app.currentIndex = (app.currentIndex + 1) % dataLen;
-    //     //console.log(app.currentIndex);
-    //     // 高亮当前图形
-    //     myChart.dispatchAction({
-    //       type: 'highlight',
-    //       seriesIndex: 0,
-    //       dataIndex: app.currentIndex,
-    //     });
-    //     // 显示 tooltip
-    //     myChart.dispatchAction({
-    //       type: 'showTip',
-    //       seriesIndex: 0,
-    //       dataIndex: app.currentIndex
-    //     });
-
-
-    //   }, 1000);
 
 ```
