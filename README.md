@@ -1,373 +1,70 @@
-```javascript
-	var dataArr = 44;
-			var colorSet = {
-			    color: '#22B95E'
-			};
-			var color1 = {
-	            type: "linear",
-	            x: 0,
-	            y: 0,
-	            x2: 1,
-	            y2: 1,
-	            colorStops: [
-	                {
-		                offset: 0,
-		                color: "rgba(255,255,255,0.1)"
-	                },
-	                {
-	                    offset: 1,
-	                    color: "rgba(255,255,255,0.3)"
-	                }
-	            ],
-	                global: false
-	        }
-	        var color2 = {
-	            type: "linear",
-	            x: 0,
-	            y: 0,
-	            x2: 1,
-	            y2: 1,
-	            colorStops: [
-	                {
-		                offset: 0,
-		                color: "#30DBBA"
-	                },
-	                {
-	                    offset: 1,
-	                    color: "#2DE696"
-	                }
-	            ],
-	                global: false
-	        }
+```html
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>&lt;Table&gt; Responsive</title>
+  <link rel="stylesheet" href="./style.css">
 
-			option = {
-			    backgroundColor: '#0E1327',
-			    tooltip: {
-			        formatter: "{a} <br/>{b} : {c}%"
-			    },
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<h1><span class="blue">&lt;</span>Table<span class="blue">&gt;</span> <span class="yellow">Responsive</pan></h1>
+<h2>Created with love by <a href="https://github.com/pablorgarcia" target="_blank">Pablo García</a></h2>
 
-			    series: [
-			    	{
-			            name: "内部进度条",
-			            type: "gauge",
-			            // center: ['20%', '50%'],
-			            radius: '52%',
+<table class="container">
+	<thead>
+		<tr>
+			<th><h1>Sites</h1></th>
+			<th><h1>Views</h1></th>
+			<th><h1>Clicks</h1></th>
+			<th><h1>Average</h1></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Google</td>
+			<td>9518</td>
+			<td>6369</td>
+			<td>01:32:50</td>
+		</tr>
+		<tr>
+			<td>Twitter</td>
+			<td>7326</td>
+			<td>10437</td>
+			<td>00:51:22</td>
+		</tr>
+		<tr>
+			<td>Amazon</td>
+			<td>4162</td>
+			<td>5327</td>
+			<td>00:24:34</td>
+		</tr>
+    <tr>
+			<td>LinkedIn</td>
+			<td>3654</td>
+			<td>2961</td>
+			<td>00:12:10</td>
+		</tr>
+    <tr>
+			<td>CodePen</td>
+			<td>2002</td>
+			<td>4135</td>
+			<td>00:46:19</td>
+		</tr>
+    <tr>
+			<td>GitHub</td>
+			<td>4623</td>
+			<td>3486</td>
+			<td>00:31:52</td>
+		</tr>
+	</tbody>
+</table>
+<!-- partial -->
+  <script  src="./script.js"></script>
 
-			            splitNumber: 10,
-			            axisLine: {
-			                lineStyle: {
-			                    color: [
-			                        [dataArr / 100, colorSet.color],
-			                        [1, colorSet.color]
-			                    ],
-			                    width: 2
-			                }
-			            },
-			            axisLabel: {
-			                show: false,
-			            },
-			            axisTick: {
-			                show: false,
+</body>
+</html>
 
-			            },
-			            splitLine: {
-			                show: false,
-			            },
-			            itemStyle: {
-			                color:"#ffffff"
-			            },
-			            detail: {
-			            	show: false,
-			                formatter: function(value) {
-			                    if (value !== 0) {
-			                        var num = Math.round(value ) ;
-			                        return parseInt(num).toFixed(0)+"%";
-			                    } else {
-			                        return 0;
-			                    }
-			                },
-			                offsetCenter: [0, 67],
-			                textStyle: {
-			                    padding: [0, 0, 0, 0],
-			                    fontSize: 18,
-			                    fontWeight: '700',
-			                    color: '#ffffff'
-			                }
-			            },
-			            title: { //标题
-			                show: false,
-			                offsetCenter: [0, 46], // x, y，单位px
-			                textStyle: {
-			                    color: "rgba(0,0,0,0)",
-			                    fontSize: 14, //表盘上的标题文字大小
-			                    fontFamily: 'PingFangSC'
-			                }
-			            },
-			            data: [{
-			                name: "",
-			                value: dataArr,
-			            }],
-			            pointer: {
-			                show: true,
-			                length: '70%',
-			                radius: '20%',
-			                width: 3 //指针粗细
-
-			            },
-			            animationDuration: 4000,
-			        },
-			        {
-			            name: "内部阴影",
-			            type: "gauge",
-			            radius: '44%',
-			            splitNumber: 10,
-			            axisLine: {
-			                lineStyle: {
-			                    color: [
-			                        [dataArr / 100, new echarts.graphic.LinearGradient(
-			                            0, 1, 0, 0, [{
-			                                    offset: 0,
-			                                    color: 'rgba(45,230,150,0)',
-			                                }, {
-			                                    offset: 0.5,
-			                                    color: 'rgba(45,230,150,0.2)',
-			                                },
-			                                {
-			                                    offset: 1,
-			                                    color: 'rgba(45,230,150,1)',
-			                                }
-			                            ]
-			                        )],
-			                        [
-			                            1, 'rgba(28,128,245,0)'
-			                        ]
-			                    ],
-			                    width: 100
-
-			                },
-			            },
-			            axisLabel: {
-			                show: false,
-			            },
-			            axisTick: {
-			                show: false,
-
-			            },
-			            splitLine: {
-			                show: false,
-			            },
-			            itemStyle: {
-			                show: false,
-			            },
-			       
-			        },
-			        {
-			            name: "内部小圆",
-			            type: "gauge",
-			            // center: ['20%', '50%'],
-			            radius: '46%',
-
-			            splitNumber: 10,
-			            axisLine: {
-			                lineStyle: {
-			                    color: [
-			                        [dataArr / 100, color2],
-			                        [1, "rgba(0,0,0,0)"]
-			                    ],
-			                    width: 10
-			                }
-			            },
-			            axisLabel: {
-			                show: false,
-			            },
-			            axisTick: {
-			                show: false,
-
-			            },
-			            splitLine: {
-			                show: false,
-			            },
-			            itemStyle: {
-			                show: false,
-			            },
-			        },
-			        {
-			            name: '外部刻度',
-			            type: 'gauge',
-			            //  center: ['20%', '50%'],
-			            radius: '48%',
-			            min: 0, //最小刻度
-			            max: 100, //最大刻度
-			            splitNumber: 5, //刻度数量
-			            startAngle: 225,
-			            endAngle: -45,
-			            axisLine: {
-			                show: true,
-			                lineStyle: {
-			                    width: 1,
-			                    color: [
-			                        [1, 'rgba(0,0,0,0)']
-			                    ]
-			                }
-			            }, //仪表盘轴线
-			            axisLabel: {
-			                show: true,
-			                color: '#ffffff',
-			                fontSize:14,
-			                fontFamily:'SourceHanSansSC-Regular',
-			                fontWeight:'bold',
-			                // position: "top",
-                    		distance: -30,
-			                formatter: function(v) {
-			                    switch (v + '') {
-			                        case '0':
-			                            return '0';
-			                        case '10':
-			                            return '10';
-			                        case '20':
-			                            return '20';
-			                        case '30':
-			                            return '30';
-			                        case '40':
-			                            return '40';
-			                        case '50':
-			                            return '50';
-			                        case '60':
-			                            return '60';
-			                        case '70':
-			                            return '70';
-			                        case '80':
-			                            return '80';
-			                        case '90':
-			                            return '90';
-			                        case '100':
-			                            return '100';
-			                    }
-			                }
-			            }, //刻度标签。
-			            axisTick: {
-			                show: true,
-			                splitNumber: 3,
-			                lineStyle: {
-			                    color: color1, //用颜色渐变函数不起作用
-			                    width: 1,
-			                },
-			                length: -6
-			            }, //刻度样式
-			            splitLine: {
-			                show: true,
-			                length: -12,
-			                lineStyle: {
-			                    color: color1, //用颜色渐变函数不起作用
-			                }
-			            }, //分隔线样式
-			            detail: {
-			                show: false
-			            }
-			        },
-			        {
-			            name: "内部进度条",
-			            type: "gauge",
-			            // center: ['20%', '50%'],
-			            radius: '20%',
-
-			            splitNumber: 10,
-			            axisLine: {
-			                lineStyle: {
-			                    color: [
-			                        [dataArr / 100, colorSet.color],
-			                        [1, colorSet.color]
-			                    ],
-			                    width: 1
-			                }
-			            },
-			            axisLabel: {
-			                show: false,
-			            },
-			            axisTick: {
-			                show: false,
-
-			            },
-			            splitLine: {
-			                show: false,
-			            },
-			            itemStyle: {
-			                color:"#ffffff"
-			            },
-			            detail: {
-			                formatter: function(value) {
-			                    if (value !== 0) {
-			                        var num = Math.round(value ) ;
-			                        return parseInt(num).toFixed(0)+"%";
-			                    } else {
-			                        return 0;
-			                    }
-			                },
-			                offsetCenter: [0, 67],
-			                textStyle: {
-			                    padding: [0, 0, 0, 0],
-			                    fontSize: 18,
-			                    color: "#ffffff"
-			                }
-			            },
-			            title: { //标题
-			                show: true,
-			                offsetCenter: [0, 46], // x, y，单位px
-			                textStyle: {
-			                    color: "#fff",
-			                    fontSize: 14, //表盘上的标题文字大小
-			                    fontWeight: 400,
-			                    fontFamily: 'MicrosoftYaHei'
-			                }
-			            },
-			            data: [{
-			                name: "去年优良率",
-			                value: dataArr,
-			                itemStyle:{
-			                	color:"#ffffff",
-			                	fontFamily: "MicrosoftYaHei",
-			                	fontSize:14
-			                }
-			            }],
-			            pointer: {
-			                show: true,
-			                length: '70%',
-			                radius: '20%',
-			                width: 3 //指针粗细
-
-			            },
-			            animationDuration: 4000,
-			        },
-			        { //指针上的圆
-		            type: 'pie',
-		            tooltip: {
-		                show: false
-		            },
-		            hoverAnimation: false,
-		            legendHoverLink: false,
-		            radius: ['0%', '4%'],
-		            center: ['50%', '50%'],
-		            label: {
-		                normal: {
-		                    show: false
-		                }
-		            },
-		            labelLine: {
-		                normal: {
-		                    show: false
-		                }
-		            },
-		            data: [{
-		                value: 120,
-		                itemStyle: {
-		                    normal: {
-		                        color: "#ffffff",
-		                    },
-		                }
-		            }]
-		        },
-			        
-			    ]
-			};
 
 ```
