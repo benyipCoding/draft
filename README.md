@@ -1,649 +1,420 @@
-```vue
-<template>
-  <div class="min-h-screen bg-slate-50 text-slate-800 font-sans p-4 md:p-8">
-    <div class="max-w-6xl mx-auto space-y-6">
-      
-      <!-- Header -->
-      <header class="flex items-center justify-between pb-4 border-b border-slate-200">
-        <div>
-          <h1 class="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <span class="p-2 bg-emerald-600 text-white rounded-lg shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
-            </span>
-            Excel AI 数据工作台 
-            <span class="text-xs font-normal px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full ml-2 hidden md:inline-flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600 mr-1"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-              纯本地处理
-            </span>
-          </h1>
-          <p class="text-slate-500 mt-2 text-sm">无需上传服务器，保护核心商业数据。使用 AI 生成逻辑，本地瞬间完成数据清洗、处理或模拟生成。</p>
-        </div>
-        <button 
-          v-if="history.length > 0"
-          @click="handleDownload"
-          class="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium transition-colors shadow-sm"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          保存全部工作表
-        </button>
-      </header>
-
-      <div v-if="error" class="bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm">
-        <p class="text-red-700 text-sm">{{ error }}</p>
-      </div>
-
-      <!-- Local Import -->
-      <div v-if="history.length === 0" class="mt-12 flex flex-col items-center">
-        <div 
-          :class="[
-            'w-full max-w-2xl border-2 border-dashed rounded-2xl p-16 flex flex-col items-center justify-center text-center transition-all',
-            isDragging ? 'border-emerald-500 bg-emerald-50 scale-[1.02]' : 'border-slate-300 bg-white hover:border-emerald-400 hover:bg-slate-50',
-            !xlsxLoaded ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer shadow-sm hover:shadow-md'
-          ]"
-          @dragover.prevent="onDragOver" 
-          @dragleave.prevent="onDragLeave" 
-          @drop.prevent="onDrop"
-          @click="xlsxLoaded && fileInputRef?.click()"
-        >
-          <input type="file" ref="fileInputRef" class="hidden" accept=".xlsx, .xls, .csv" @change="handleFileInputChange" />
-          
-          <div class="bg-emerald-100 p-4 rounded-full mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-500"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-          </div>
-          
-          <h3 class="text-xl font-bold text-slate-800 mb-2">
-            <span v-if="!xlsxLoaded">正在初始化本地引擎...</span>
-            <span v-else>将 Excel 文件拖拽至此（支持多表或空表）</span>
-          </h3>
-          
-          <!-- Trust Indicators -->
-          <div class="flex flex-col items-center gap-2 mt-6 p-4 bg-slate-50 rounded-xl w-full">
-            <div class="flex items-center text-emerald-700 font-medium text-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-600"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg> 
-              <span class="ml-1.5">您的完整文件不会上传至任何服务器</span>
-            </div>
-            <p class="text-xs text-slate-500">仅读取表头供 AI 理解结构，几十万行数据计算完全在您浏览器的内存中运行。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Workspace -->
-      <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <!-- Left Panel: Command -->
-        <div class="lg:col-span-4 flex flex-col space-y-4 h-[600px] lg:h-[calc(100vh-180px)]">
-          
-          <!-- File Info -->
-          <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex justify-between items-center shrink-0">
-            <div class="overflow-hidden">
-              <p class="font-semibold text-slate-800 truncate text-sm">{{ fileName }}</p>
-              <p class="text-xs text-slate-500 mt-0.5">共 {{ availableSheets.length }} 个工作表 | 纯本地处理</p>
-            </div>
-            <button 
-              @click="closeFile"
-              class="text-xs text-slate-400 hover:text-red-500 underline whitespace-nowrap ml-4"
-            >
-              关闭文件
-            </button>
-          </div>
-
-          <!-- AI Command Box -->
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2 mb-1 shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
-              告诉 AI 你想怎么处理
-            </h3>
-            <p class="text-xs text-slate-500 mb-3 shrink-0">操作将仅针对当前选中的工作表: <span class="font-semibold text-emerald-600">[{{ currentSheetName }}]</span></p>
-            
-            <!-- Shortcut Pills -->
-            <div class="flex flex-wrap gap-2 mb-3 max-h-32 overflow-y-auto shrink-0">
-              <button
-                v-for="(s, idx) in SHORTCUTS"
-                :key="idx"
-                @click="prompt = s.prompt"
-                class="text-[11px] px-2.5 py-1 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 rounded-full border border-slate-200 transition-colors text-left"
-              >
-                {{ s.label }}
-              </button>
-            </div>
-
-            <div class="flex-1 flex flex-col space-y-3 min-h-0 mt-1">
-              <textarea
-                class="flex-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none text-sm transition-all"
-                placeholder="输入指令（例如：帮我把地址列拆分，或者生成20条模拟用户数据...）"
-                v-model="prompt"
-                :disabled="isLoading"
-              ></textarea>
-              
-              <!-- Trust indicator right near the execute button -->
-              <div class="flex items-center justify-between shrink-0">
-                <button 
-                  @click="showPrivacyModal = true"
-                  class="text-xs text-slate-400 hover:text-emerald-600 flex items-center transition-colors"
-                  title="查看实际发送给AI的脱敏内容"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                  隐私透明度
-                </button>
-
-                <button
-                  @click="handleProcess"
-                  :disabled="isLoading || !prompt.trim()"
-                  :class="[
-                    'px-6 py-2 rounded-lg text-sm font-medium flex items-center transition-all',
-                    isLoading || !prompt.trim() 
-                      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                  ]"
-                >
-                  <span v-if="isLoading">AI 处理中...</span>
-                  <span v-else>针对当前表执行</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Panel: Data Table -->
-        <div class="lg:col-span-8 flex flex-col h-[600px] lg:h-[calc(100vh-180px)]">
-          <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden transition-all">
-            
-            <!-- Status Bar -->
-            <div class="px-4 py-3 border-b border-slate-200 flex justify-between items-center bg-white shrink-0">
-              <h2 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                <span v-if="activeRecord?.isOriginal">原始数据</span>
-                <span v-else>操作记录: {{ history.findIndex(h => h.id === activeHistoryId) }}</span>
-              </h2>
-              <div class="flex items-center gap-3">
-                <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
-                  当前表共 {{ displayData.length }} 行
-                </span>
-                <button
-                  @click="isHistoryDrawerOpen = true"
-                  :class="[
-                    'text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 transition-all duration-300 shadow-sm',
-                    isNewRecordAdded
-                      ? 'bg-emerald-500 text-white scale-105 shadow-emerald-500/40 animate-pulse'
-                      : 'text-emerald-700 hover:text-emerald-800 bg-emerald-100 hover:bg-emerald-200'
-                  ]"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
-                  工作簿历史 ({{ history.length }})
-                </button>
-              </div>
-            </div>
-
-            <!-- Sheet Tabs -->
-            <div class="flex overflow-x-auto bg-slate-50 border-b border-slate-200 hide-scrollbar shrink-0">
-              <button
-                v-for="sheet in availableSheets"
-                :key="sheet"
-                @click="activeSheetName = sheet"
-                :class="[
-                  'flex items-center px-5 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-r border-slate-200',
-                  currentSheetName === sheet 
-                    ? 'bg-white text-emerald-700 border-t-2 border-t-emerald-500 shadow-[0_1px_0_0_white] z-10' 
-                    : 'text-slate-500 hover:bg-slate-100 border-t-2 border-t-transparent'
-                ]"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
-                {{ sheet }}
-              </button>
-            </div>
-
-            <!-- Table Data -->
-            <div class="flex-1 overflow-auto bg-white">
-              <table class="min-w-full divide-y divide-slate-200 text-sm">
-                <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
-                  <tr>
-                    <th class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50 w-10 text-center border-r border-slate-200">#</th>
-                    <th v-for="(col, idx) in displayColumns" :key="idx" class="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-50 border-r border-slate-200 whitespace-nowrap">
-                      {{ col }}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-slate-200">
-                  <tr v-for="(row, rowIdx) in displayData.slice(0, 100)" :key="rowIdx" class="hover:bg-slate-50 transition-colors">
-                    <td class="px-3 py-1.5 text-xs text-slate-400 text-center border-r border-slate-200 bg-slate-50/50">
-                      {{ rowIdx + 1 }}
-                    </td>
-                    <td v-for="(col, colIdx) in displayColumns" :key="colIdx" class="px-3 py-1.5 text-slate-700 border-r border-slate-200 whitespace-nowrap max-w-[200px] overflow-hidden text-ellipsis" :title="getCellValue(row, col)">
-                      <span v-if="getCellValue(row, col)">{{ getCellValue(row, col) }}</span>
-                      <span v-else class="text-slate-300">-</span>
-                    </td>
-                  </tr>
-                  
-                  <!-- 空数据状态提示 -->
-                  <tr v-if="displayData.length === 0">
-                    <td :colspan="Math.max(displayColumns.length + 1, 1)" class="px-3 py-20 text-center text-slate-500">
-                      <div class="flex flex-col items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8 text-emerald-300 mb-3"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>
-                        <p class="font-medium text-slate-600 mb-1">【{{ currentSheetName }}】 暂无数据</p>
-                        <p class="text-xs text-slate-400">您可以点击左侧快捷指令，让 AI 为您生成模拟数据测试。</p>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- --- Privacy Transparency Modal --- -->
-      <div 
-        v-if="showPrivacyModal"
-        class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity"
-        @click="showPrivacyModal = false"
-      >
-        <div 
-          class="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all"
-          @click.stop
-        >
-          <div class="px-5 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-            <h3 class="text-emerald-400 font-bold flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-              严格隐私模式验证
-            </h3>
-            <button 
-              @click="showPrivacyModal = false"
-              class="text-slate-400 hover:text-white transition-colors p-1 rounded-full hover:bg-slate-700"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-            </button>
-          </div>
-          <div class="p-6 text-slate-300 text-sm">
-            <p class="mb-4">
-              我们郑重承诺不会发送您的整个文件。为了让 AI 理解您的数据结构以编写处理逻辑，
-              <span class="text-white font-bold bg-emerald-900/50 px-2 py-0.5 rounded ml-1">仅有以下极少量结构数据</span> 会被作为上下文发送：
-            </p>
-            <div class="bg-slate-950 p-4 rounded-lg overflow-x-auto border border-slate-700 shadow-inner">
-              <pre class="text-xs leading-relaxed text-emerald-100 font-mono">{{ JSON.stringify(aiPayloadData, null, 2) }}</pre>
-            </div>
-            <div class="mt-5 flex items-start gap-2 text-slate-400 bg-slate-700/20 p-3 rounded-lg">
-              <span class="text-xl">💡</span>
-              <p class="text-xs leading-relaxed">
-                表格中的所有其余数据均完全在您设备的本地内存中处理。即使您在此刻断开计算机的网络连接，只要 AI 代码已返回，庞大的数据处理依然可以瞬间完成。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- --- History Drawer UI --- -->
-      <!-- Drawer Backdrop -->
-      <div
-        v-if="isHistoryDrawerOpen"
-        class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-40 transition-opacity"
-        @click="isHistoryDrawerOpen = false"
-      ></div>
-
-      <!-- Drawer Panel -->
-      <div
-        :class="[
-          'fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col',
-          isHistoryDrawerOpen ? 'translate-x-0' : 'translate-x-full'
-        ]"
-      >
-        <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-          <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
-            工作簿操作记录
-          </h3>
-          <button
-            @click="isHistoryDrawerOpen = false"
-            class="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-full hover:bg-slate-200"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
-          <div
-            v-for="(record, idx) in history"
-            :key="record.id"
-            @click="activeHistoryId = record.id"
-            :class="[
-              'p-3 rounded-xl border cursor-pointer transition-all',
-              record.id === activeHistoryId
-                ? 'bg-emerald-50 border-emerald-400 ring-2 ring-emerald-100 shadow-sm'
-                : 'bg-white border-slate-200 hover:border-emerald-300 shadow-sm'
-            ]"
-          >
-            <div class="flex justify-between items-start gap-2">
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1.5">
-                  <span v-if="record.id === activeHistoryId" class="flex h-2 w-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <p :class="['text-sm font-semibold truncate', record.id === activeHistoryId ? 'text-emerald-800' : 'text-slate-700']">
-                    <span v-if="record.isOriginal">{{ record.title }}</span>
-                    <span v-else>操作记录 {{ idx }}</span>
-                  </p>
-                </div>
-                <p v-if="!record.isOriginal" class="text-xs text-slate-600 line-clamp-2 mb-2" :title="record.title">
-                  <span class="font-bold text-emerald-600 bg-emerald-100/50 px-1.5 py-0.5 rounded mr-1">
-                    [{{ record.targetSheet }}]
-                  </span>
-                  {{ record.title }}
-                </p>
-                <p v-if="record.explanation" class="text-[11px] text-emerald-700 bg-emerald-100/50 p-2 rounded-md mt-1 leading-relaxed">
-                  🤖 {{ record.explanation }}
-                </p>
-              </div>
-              <div class="flex flex-col items-end shrink-0 gap-2">
-                <span class="text-[10px] text-slate-400 font-medium">{{ record.timestamp }}</span>
-                <button
-                  v-if="!record.isOriginal"
-                  @click.stop="handleDeleteHistory(record.id)"
-                  class="text-slate-400 hover:text-red-500 transition-colors p-1 rounded hover:bg-red-50"
-                  title="删除此记录"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-
-// --- Types ---
-interface SheetData {
-  data: any[];
-  columns: string[];
-}
-
-interface HistoryRecord {
-  id: string;
-  title: string;
-  targetSheet?: string;
-  explanation?: string;
-  sheets: Record<string, SheetData>;
-  timestamp: string;
-  isOriginal?: boolean;
-}
-
-// --- Prompt Shortcuts ---
-const SHORTCUTS = [
-  { label: "✨ 生成模拟数据", prompt: "请帮我生成20条员工测试数据，包含：姓名、手机号(11位数字)、所属部门(研发/销售/HR/财务)、入职时间(YYYY-MM-DD格式)、在职状态(在职/离职)。" },
-  { label: "标准化日期", prompt: "检查所有包含日期的列，将其统一转换为 'YYYY-MM-DD' 格式。如果无法识别则保持原样。" },
-  { label: "清理前后空格", prompt: "清除所有文本单元格内容前后的空格和不可见换行符。" },
-  { label: "敏感信息打码", prompt: "识别包含手机号、身份证或邮箱的列，将中间部分用 '*' 号隐藏打码（例如手机号保留前3后4）。" },
-  { label: "提取纯数字", prompt: "针对包含金额、价格或重量的列（如 '100元'，'50kg'），提取纯数字以便于后续计算。" },
-  { label: "混合信息提取", prompt: "自动分析包含长文本的列，尝试提取出其中的人名、电话号码等关键信息，并存入新增加的列中。" },
-  { label: "向下填充空白", prompt: "遍历所有列，如果遇到空白的单元格，使用它上方同列最近的一个非空单元格的值进行填充。" },
-  { label: "多条件打标签", prompt: "请帮我根据特定的业务逻辑判定（例如某列数值大于一定阈值），新增一列 '用户标签' 并填入对应的分类结果。" },
-  { label: "多列联合去重", prompt: "自动推断两到三列关键身份列（如姓名和手机号），基于组合进行排重，完全相同的只保留第一条数据。" },
-  { label: "分组求和汇总", prompt: "根据某个维度列（如部门或分类）进行分组，并对其它包含数字的列进行求和汇总，生成全新的报表。" }
-];
-
-// --- State ---
-const xlsxLoaded = ref(false);
-const isDragging = ref(false);
-
-const fileName = ref("");
-const history = ref<HistoryRecord[]>([]);
-const activeHistoryId = ref<string | null>(null);
-const activeSheetName = ref("");
-
-const isHistoryDrawerOpen = ref(false);
-const isNewRecordAdded = ref(false);
-const showPrivacyModal = ref(false);
-
-const prompt = ref("");
-const isLoading = ref(false);
-const error = ref<string | null>(null);
-
-const fileInputRef = ref<HTMLInputElement | null>(null);
-
-// --- Derived State (Computed) ---
-const activeRecord = computed(() => {
-  return history.value.find(h => h.id === activeHistoryId.value) || history.value[0];
-});
-
-const availableSheets = computed(() => {
-  return activeRecord.value?.sheets ? Object.keys(activeRecord.value.sheets) : [];
-});
-
-const currentSheetName = computed(() => {
-  return availableSheets.value.includes(activeSheetName.value) 
-    ? activeSheetName.value 
-    : (availableSheets.value[0] || "");
-});
-
-const displayData = computed(() => {
-  return activeRecord.value?.sheets?.[currentSheetName.value]?.data || [];
-});
-
-const displayColumns = computed(() => {
-  return activeRecord.value?.sheets?.[currentSheetName.value]?.columns || [];
-});
-
-const aiPayloadData = computed(() => ({
-  currentSheet: currentSheetName.value,
-  columns: displayColumns.value,
-  sampleRow: displayData.value[0] || {}
-}));
-
-// --- Lifecycle ---
-onMounted(() => {
-  if ((window as any).XLSX) {
-    xlsxLoaded.value = true;
-    return;
-  }
-  const script = document.createElement('script');
-  script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
-  script.onload = () => { xlsxLoaded.value = true; };
-  script.onerror = () => { error.value = "无法加载本地解析引擎，请检查网络。"; };
-  document.head.appendChild(script);
-});
-
-// --- Methods ---
-const closeFile = () => {
-  history.value = [];
-  activeHistoryId.value = null;
-  fileName.value = "";
-};
-
-const handleFileInputChange = (e: Event) => {
-  const target = e.target as HTMLInputElement;
-  if (target.files && target.files.length > 0) {
-    handleFileUpload(target.files[0]);
-  }
-  if (target) target.value = ''; // Reset to allow re-upload of same file
-};
-
-const handleFileUpload = (file: File) => {
-  if (!file) return;
-  const isExcel = file.name.match(/\.(xlsx|xls|csv)$/i);
-  if (!isExcel) {
-    error.value = "不支持的格式，请选择 .xlsx, .xls 或 .csv 文件";
-    return;
-  }
-
-  fileName.value = file.name;
-  error.value = null;
-
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = e.target?.result;
-      const workbook = (window as any).XLSX.read(data, { type: 'binary' });
-      
-      const initialSheets: Record<string, SheetData> = {};
-      let firstSheet = "";
-
-      workbook.SheetNames.forEach((sheetName: string, index: number) => {
-        if (index === 0) firstSheet = sheetName;
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = (window as any).XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: "" });
-        initialSheets[sheetName] = {
-          data: jsonData,
-          columns: jsonData.length > 0 ? Object.keys(jsonData[0]) : []
-        };
-      });
-
-      const initialRecord: HistoryRecord = {
-        id: Date.now().toString(),
-        title: "原始导入数据",
-        sheets: initialSheets,
-        timestamp: new Date().toLocaleTimeString(),
-        isOriginal: true
-      };
-      
-      history.value = [initialRecord];
-      activeHistoryId.value = initialRecord.id;
-      activeSheetName.value = firstSheet;
-    } catch (err: any) {
-      error.value = "解析时发生错误：" + err.message;
-    }
-  };
-  reader.readAsBinaryString(file);
-};
-
-const onDragOver = () => { isDragging.value = true; };
-const onDragLeave = () => { isDragging.value = false; };
-const onDrop = (e: DragEvent) => {
-  isDragging.value = false;
-  if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
-    handleFileUpload(e.dataTransfer.files[0]);
-  }
-};
-
-const handleProcess = async () => {
-  if (!prompt.value.trim()) return; 
-  isLoading.value = true;
-  error.value = null;
-
-  try {
-    const apiKey = ""; // 请在此处填入您的 API Key 或通过环境变量注入
-    
-    const systemInstruction = `You are a strict, expert JavaScript data transformation assistant.
-Task: Write a single JS function 'transform(data)' to transform an array of objects based on user command.
-Context sent by user (Focusing ONLY on sheet: '${currentSheetName.value}'):
-- Columns: ${JSON.stringify(aiPayloadData.value.columns)}
-- Sample 1st Row: ${JSON.stringify(aiPayloadData.value.sampleRow)}
-
-Rules:
-1. Return purely a valid JSON object: {"code": "function transform(data) {...return newData;}", "explanation": "Brief Chinese explanation"}.
-2. Use ES6+ pure JS. NO external libraries. Handle missing keys gracefully.
-3. Your code will run locally on the user's FULL dataset. Return a deeply cloned and modified array.
-4. IMPORTANT: If the input 'data' is empty and the user asks to generate mock/test data, generate and return a new array of objects fulfilling their request.`;
-
-    const payload = {
-      contents: [{ parts: [{ text: `User Command: ${prompt.value}` }] }],
-      systemInstruction: { parts: [{ text: systemInstruction }] },
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: "OBJECT",
-          properties: { code: { type: "STRING" }, explanation: { type: "STRING" } },
-          required: ["code", "explanation"]
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 内存调度与架构演进 (多步交互版)</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e2e; --panel-bg: #282a36; --terminal-bg: #191a21;
+            --text-main: #f8f8f2; --text-dim: #6272a4;
+            --cyan: #8be9fd; --green: #50fa7b; --pink: #ff79c6;
+            --orange: #ffb86c; --red: #ff5555; --yellow: #f1fa8c;
+            --border-radius: 6px;
         }
-      }
-    };
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-dark); color: var(--text-main);
+            margin: 0; padding: 20px; line-height: 1.6;
+        }
+        h1, h2 { color: var(--cyan); border-bottom: 1px solid #44475a; padding-bottom: 10px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .stage-card {
+            background: var(--panel-bg); border-radius: var(--border-radius);
+            padding: 25px; margin-bottom: 40px; box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            border-left: 6px solid var(--cyan); transition: all 0.3s;
+        }
+        .stage-card[data-stage="1"] { border-left-color: var(--red); }
+        .stage-card[data-stage="2"] { border-left-color: var(--orange); }
+        .stage-card[data-stage="3"] { border-left-color: var(--green); }
+        .stage-card[data-stage="4"] { border-left-color: var(--pink); }
 
-    let result;
-    for (let i = 0; i < 3; i++) {
-      try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-        });
-        if (res.ok) { result = await res.json(); break; }
-      } catch (e) { if (i === 2) throw e; }
+        .btn {
+            background-color: #44475a; color: var(--text-main);
+            border: 1px solid var(--cyan); padding: 10px 20px;
+            border-radius: 4px; cursor: pointer; font-size: 15px;
+            font-weight: bold; transition: all 0.2s; margin-bottom: 15px; margin-right: 10px;
+        }
+        .btn:hover:not(:disabled) { background-color: var(--cyan); color: #000; box-shadow: 0 0 10px var(--cyan); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #6272a4; }
+
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1.5fr; }
+        .full-width { grid-column: 1 / -1; }
+
+        .panel {
+            background: var(--terminal-bg); border-radius: var(--border-radius);
+            padding: 15px; border: 1px solid #44475a; font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 13px; display: flex; flex-direction: column;
+        }
+        .panel-header {
+            display: flex; justify-content: space-between; color: var(--pink);
+            font-weight: bold; border-bottom: 1px dashed #44475a; padding-bottom: 8px;
+            margin-bottom: 10px; margin-top: 0;
+        }
+        .scroll-area { flex-grow: 1; overflow-y: auto; max-height: 350px; }
+        
+        .log-entry { margin-bottom: 8px; padding: 6px; border-radius: 4px; background: #282a36; border-left: 3px solid; animation: fadeIn 0.3s ease; }
+        .log-user { border-color: var(--green); }
+        .log-ai { border-color: var(--cyan); }
+        .log-sys { color: var(--text-dim); }
+
+        .prompt-view { background: #000; border-color: var(--pink); color: var(--text-main); }
+        .tag-xml { color: var(--pink); font-weight: bold; }
+        pre { margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+
+        .highlight-loss { color: var(--red); text-decoration: line-through; }
+        .highlight-keep { color: var(--green); font-weight: bold; }
+        .log-dropped { color: var(--red); text-decoration: line-through; animation: fadeOut 2s forwards; }
+
+        /* RAG Search Animation */
+        .search-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+        .search-input { flex: 1; padding: 10px; background: var(--terminal-bg); border: 1px solid var(--cyan); color: white; border-radius: 4px; }
+        .scanning { animation: scan 1s infinite alternate; color: var(--cyan); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes scan { from { text-shadow: 0 0 5px var(--cyan); } to { text-shadow: 0 0 20px var(--cyan), 0 0 30px var(--cyan); } }
+        @keyframes fadeOut { to { opacity: 0.3; } }
+        @keyframes flash { 0%, 100% { background: transparent; } 50% { background: rgba(255,85,85,0.3); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔬 AI 架构演进：深度剖析“记忆”与“知识”</h1>
+    <p>演示场景：排查一台 ESXi 主机 (10.0.0.51) 意外断开的真实排障全过程。</p>
+
+    <div class="stage-card" data-stage="1">
+        <h2>阶段一：裸机狂奔与 OOM (上下文腐化)</h2>
+        <p>大模型原生状态下就像只有几十 KB 内存的设备。日志稍微多一点，早期排查记录就会被强行挤出内存，导致 AI "失忆"。你问它之前排查过什么，它开始胡编乱造。</p>
+        <button class="btn" id="btn-s1" style="border-color: var(--red);">[模拟] 不断输入排障日志 (尾部追加)</button>
+        <div class="panel" id="s1-ram">
+            <h4 class="panel-header"><span>💾 L1 Cache (当前大模型上下文窗口)</span> <span id="s1-count">0/4 满载界限</span></h4>
+            <div id="s1-content"></div>
+        </div>
+    </div>
+
+    <div class="stage-card" data-stage="2">
+        <h2>阶段二：初版 Memory —— 滚动摘要的“失真实验”</h2>
+        <p>引入滑动窗口机制：保留最近 4 条日志，溢出的老日志会被 AI 压缩成“摘要”。<br>
+        👉 <b>请不断点击下一步</b>，观察早期带具体 IP 和存储类型的对话是如何一步步被“磨损”掉的。</p>
+        <button class="btn" id="btn-s2-next">下一轮对话 (+1)</button>
+        <button class="btn" id="btn-s2-reset" style="background: transparent; border-color: var(--text-dim);">重置</button>
+        
+        <div class="grid-3">
+            <div class="panel">
+                <h4 class="panel-header">⏱️ 短期缓冲 (最多4条) <span id="s2-counter">0/4</span></h4>
+                <div class="scroll-area" id="s2-buffer"></div>
+            </div>
+            <div class="panel">
+                <h4 class="panel-header">📝 轨道一：历史快照 (滚动摘要)</h4>
+                <div class="scroll-area" id="s2-summary" style="color: var(--orange);">[暂无摘要，等待溢出...]</div>
+                <p style="color:var(--text-dim); font-size: 11px; margin-top: 10px;">注意观察：重要信息是否随着点击丢失？</p>
+            </div>
+            <div class="panel prompt-view">
+                <h4 class="panel-header">⚙️ 实时发送给 LLM 的底层 Prompt</h4>
+                <div class="scroll-area">
+                    <pre id="s2-prompt" class="log-sys">点击开始排障推演...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stage-card" data-stage="3">
+        <h2>阶段三：终极 Memory —— 双轨制与 KV 状态机</h2>
+        <p>为了对抗摘要带来的“信息磨损”，我们开启第二条轨道：<b>核心资产状态机</b>。它就像我们的 CMDB，强行提取关键设定并锁定为 JSON 格式。<br>
+        👉 <b>继续点击</b>，这次有了左侧的“原生对话”作为参照，你能直观感受到：无论中间的摘要把 IP 丢弃得多干净，右侧的 KV 依然死死锁住底层逻辑！</p>
+        <button class="btn" id="btn-s3-next">下一轮对话 (+1)</button>
+        <button class="btn" id="btn-s3-reset" style="background: transparent; border-color: var(--text-dim);">重置剧本</button>
+        
+        <div class="grid-layout" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="panel">
+                <h4 class="panel-header">⏱️ 短期缓冲 (对话现场) <span id="s3-counter">0/4</span></h4>
+                <div class="scroll-area" id="s3-buffer"></div>
+            </div>
+            <div class="panel">
+                <h4 class="panel-header">🗄️ 轨道二：CMDB (核心实体库)</h4>
+                <div class="scroll-area">
+                    <pre id="s3-kv" style="color: var(--yellow);">{}</pre>
+                </div>
+            </div>
+            <div class="panel">
+                <h4 class="panel-header">📝 轨道一：历史快照 (已失真)</h4>
+                <div class="scroll-area" id="s3-summary" style="color: var(--text-dim);">[暂无摘要...]</div>
+            </div>
+            <div class="panel prompt-view full-width" >
+                <h4 class="panel-header">⚙️ 融合了双轨的底层 Prompt</h4>
+                <div class="scroll-area">
+                    <pre id="s3-prompt" class="log-sys">点击开始双轨推演...</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stage-card" data-stage="4">
+        <h2>阶段四：外挂存储 (RAG) 与完全体拼装</h2>
+        <p>现在用户问了一个具体的命令。如果我们靠大模型的模糊记忆硬背，它很可能会捏造一个不存在的 ESXi 命令。我们现在通过 RAG 从外挂知识库中捞取原文档。</p>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" value="查阅如何重启 vpxa 代理" disabled>
+            <button class="btn" id="btn-s4-search" style="margin: 0;">触发向量检索</button>
+        </div>
+        
+        <div id="rag-result" style="display: none; margin-bottom: 15px; color: var(--cyan); border-left: 3px solid var(--cyan); padding-left: 10px;">
+            <div class="scanning">▶ 正在遍历 VMware 官方文档向量库...</div>
+        </div>
+
+        <div class="panel prompt-view">
+            <h4 class="panel-header">🚀 AI 接收到的终极神级 XML Prompt</h4>
+            <div class="scroll-area">
+                <pre id="s4-prompt" class="log-sys">等待检索与生成...</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 剧本数据：长达13轮的排障对话
+    const dialogueScript = [
+        { role: 'user', text: "生产环境 ESXi 主机 10.0.0.51 在 vCenter 里无响应了。" },
+        { role: 'ai', text: "收到，请确认底层 FC-SAN 存储链路状态。" },
+        { role: 'user', text: "存储组看过了，链路全是 active 的。" },
+        { role: 'ai', text: "网络能 Ping 通管理口吗？" },
+        { role: 'user', text: "可以 Ping 通，SSH 也能进去。" }, // 5 触发第一次压缩
+        { role: 'ai', text: "网络和存储正常，查一下 /var/log/vpxa.log。" },
+        { role: 'user', text: "里面全都是 Request timeout 报错。" },
+        { role: 'ai', text: "明白了，基本确认是 vpxa 管理代理卡死了。" }, // 8
+        { role: 'user', text: "那我现在该怎么办？直接物理重启机器吗？" },
+        { role: 'ai', text: "千万不要物理重启，可能会导致虚机损坏。" }, // 10
+        { role: 'user', text: "那重启代理服务会影响上面跑的业务吗？" },
+        { role: 'ai', text: "不会影响数据流量，只会短暂中断管理面。" },
+        { role: 'user', text: "好的，我该敲什么命令重启？" } // 13
+    ];
+
+    // 预设的滚动摘要演进（演示信息磨损）
+    const summaryEvolution = [
+        "[暂无摘要，等待溢出...]", // 0-4
+        "[快照更新] 开始排查 10.0.0.51 掉线。确认 FC-SAN 正常。", // 5-6
+        "[快照更新] 排查 10.0.0.51。存储正常，网络可 Ping，排查日志中。", // 7-8 (丢失了FC-SAN细节)
+        "[快照更新] 排查主机掉线。排除网络/存储故障，确认 vpxa 卡死，正在讨论修复方案。", // 9-10 (致命：10.0.0.51 丢失！)
+        "<span class='highlight-loss'>[严重失真] 某主机服务卡死，正在讨论重启的安全影响。</span>" // 11-13 (完全失去上下文)
+    ];
+
+    // 预设的 KV 演进（绝对精准）
+    const kvEvolution = [
+        {}, // 0
+        { "Target_IP": "10.0.0.51" }, // 1
+        { "Target_IP": "10.0.0.51", "Storage": "FC-SAN" }, // 2
+        { "Target_IP": "10.0.0.51", "Storage": "FC-SAN", "Fault_Component": "vpxa_agent" }, // 8
+    ];
+
+    // 工具函数：XML 高亮
+    function formatXML(text) {
+        return text.replace(/<(\/?[a-zA-Z_]+)>/g, '<span class="tag-xml"><$1></span>');
     }
 
-    const aiText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!aiText) throw new Error("AI 响应失败。");
+    // --- 阶段 1：模拟 OOM ---
+    const logs = [
+        "[09:00] 收到告警，开始排查 10.0.0.51 掉线问题。",
+        "[09:05] 执行 esxcli network ip ping，网络连通性正常。",
+        "[09:10] 检查存储链路，FC-SAN 多路径显示 active。",
+        "[09:15] 查看 /var/log/vpxa.log，发现大量 timeout 报错。",
+        "[09:20] 尝试 SSH 登录宿主机，可以成功连入。"
+    ];
+    let s1Index = 0;
+    const s1Content = document.getElementById('s1-content');
+    const s1Count = document.getElementById('s1-count');
     
-    const parsed = JSON.parse(aiText);
-    
-    // Sandbox execution on current sheet data
-    const executionWrapper = new Function('data', `${parsed.code}\n return transform(data);`);
-    const dataCopy = JSON.parse(JSON.stringify(displayData.value));
-    const transformedData = executionWrapper(dataCopy);
+    document.getElementById('btn-s1').addEventListener('click', function() {
+        if (s1Index >= logs.length) return;
+        
+        // 如果超过4条，最早的一条开始腐化
+        if (s1Content.children.length >= 4) {
+            s1Content.children[0].className = 'log-entry log-dropped';
+            s1Content.children[0].innerText += " (已被挤出内存！)";
+            setTimeout(() => { s1Content.removeChild(s1Content.children[0]); }, 2000);
+            s1Content.parentElement.style.animation = 'flash 0.5s';
+        }
 
-    if (!Array.isArray(transformedData)) throw new Error("处理结果格式异常，期望返回数组。");
-
-    const keySet = new Set<string>();
-    transformedData.forEach(row => Object.keys(row).forEach(k => keySet.add(k)));
-
-    // 深拷贝当前所有的 Sheet 状态
-    const newSheetsSnapshot = JSON.parse(JSON.stringify(activeRecord.value.sheets));
-    newSheetsSnapshot[currentSheetName.value] = {
-      data: transformedData,
-      columns: Array.from(keySet)
-    };
-
-    const newRecord: HistoryRecord = {
-      id: Date.now().toString(),
-      title: prompt.value,
-      targetSheet: currentSheetName.value,
-      explanation: parsed.explanation,
-      sheets: newSheetsSnapshot,
-      timestamp: new Date().toLocaleTimeString()
-    };
-
-    history.value.push(newRecord);
-    activeHistoryId.value = newRecord.id;
-    prompt.value = "";
-    
-    isNewRecordAdded.value = true;
-    setTimeout(() => { isNewRecordAdded.value = false; }, 2000);
-
-  } catch (err: any) {
-    error.value = "执行失败: " + (err.message || "未知错误");
-  } finally {
-    isLoading.value = false;
-  }
-};
-
-const handleDeleteHistory = (id: string) => {
-  const filtered = history.value.filter(h => h.id !== id);
-  if (activeHistoryId.value === id && filtered.length > 0) {
-    activeHistoryId.value = filtered[filtered.length - 1].id;
-  }
-  history.value = filtered;
-};
-
-const handleDownload = () => {
-  if (!(window as any).XLSX || !activeRecord.value) return; 
-  try {
-    const workbook = (window as any).XLSX.utils.book_new();
-    
-    Object.entries(activeRecord.value.sheets).forEach(([sheetName, sheetContent]) => {
-      const dataToExport = (sheetContent as SheetData).data;
-      const worksheet = (window as any).XLSX.utils.json_to_sheet(dataToExport.length > 0 ? dataToExport : []);
-      (window as any).XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+        const div = document.createElement('div');
+        div.className = 'log-entry log-user';
+        div.innerText = logs[s1Index];
+        s1Content.appendChild(div);
+        
+        s1Index++;
+        s1Count.innerText = `${Math.min(s1Content.children.length, 4)}/4 满载界限`;
+        
+        if (s1Index === logs.length) this.disabled = true;
     });
-    
-    const exportName = fileName.value ? fileName.value.replace(/\.[^/.]+$/, "") + "_已处理" : "数据导出";
-    (window as any).XLSX.writeFile(workbook, `${exportName}.xlsx`);
-  } catch (err: any) { 
-    error.value = "导出失败: " + err.message; 
-  }
-};
 
-const getCellValue = (row: any, col: string): string => {
-  let cellValue = row[col];
-  if (typeof cellValue === 'object' && cellValue !== null) {
-    cellValue = JSON.stringify(cellValue);
-  }
-  return cellValue !== undefined && cellValue !== null && cellValue !== "" ? String(cellValue) : "";
-};
+    // --- 阶段二逻辑 ---
+    let s2Index = 0;
+    let s2BufferArr = [];
+    const btnS2Next = document.getElementById('btn-s2-next');
+    
+    function updateS2View() {
+        // 更新 Buffer
+        const bufferDiv = document.getElementById('s2-buffer');
+        bufferDiv.innerHTML = s2BufferArr.map(msg => 
+            `<div class="log-entry ${msg.role === 'user' ? 'log-user' : 'log-ai'}">${msg.role.toUpperCase()}: ${msg.text}</div>`
+        ).join('');
+        document.getElementById('s2-counter').innerText = `${s2BufferArr.length}/4`;
+        bufferDiv.scrollTop = bufferDiv.scrollHeight;
+
+        // 计算当前摘要层级
+        let summaryLevel = 0;
+        if (s2Index >= 5) summaryLevel = 1;
+        if (s2Index >= 7) summaryLevel = 2;
+        if (s2Index >= 9) summaryLevel = 3;
+        if (s2Index >= 11) summaryLevel = 4;
+        
+        const currentSummary = summaryEvolution[summaryLevel];
+        document.getElementById('s2-summary').innerHTML = currentSummary;
+
+        // 生成 Prompt
+        const rawPrompt = `<System>你是一个运维助手。</System>\n\n<Rolling_Summary>\n${currentSummary.replace(/<[^>]+>/g, '')}\n</Rolling_Summary>\n\n<Recent_Buffer>\n${s2BufferArr.map(m=>m.role+": "+m.text).join('\n')}\n</Recent_Buffer>`;
+        document.getElementById('s2-prompt').innerHTML = formatXML(rawPrompt);
+    }
+
+    btnS2Next.addEventListener('click', () => {
+        if (s2Index < dialogueScript.length) {
+            s2BufferArr.push(dialogueScript[s2Index]);
+            if (s2BufferArr.length > 4) {
+                s2BufferArr.shift(); // 踢出最早的
+            }
+            s2Index++;
+            updateS2View();
+        }
+        if (s2Index >= dialogueScript.length) btnS2Next.disabled = true;
+    });
+
+    document.getElementById('btn-s2-reset').addEventListener('click', () => {
+        s2Index = 0; s2BufferArr = []; btnS2Next.disabled = false; updateS2View();
+    });
+
+    // ==========================================
+    // 阶段三逻辑 (更新：加入了对话缓冲面板)
+    // ==========================================
+    let s3Index = 0;
+    let s3BufferArr = [];
+    const btnS3Next = document.getElementById('btn-s3-next');
+
+    function updateS3View() {
+        // 1. 更新 Buffer 剧本面板
+        s3BufferArr.push(dialogueScript[s3Index]);
+        if (s3BufferArr.length > 4) s3BufferArr.shift();
+        
+        const bufferDiv = document.getElementById('s3-buffer');
+        bufferDiv.innerHTML = s3BufferArr.map(msg => 
+            `<div class="log-entry ${msg.role === 'user' ? 'log-user' : 'log-ai'}">${msg.role.toUpperCase()}: ${msg.text}</div>`
+        ).join('');
+        document.getElementById('s3-counter').innerText = `${s3BufferArr.length}/4`;
+        bufferDiv.scrollTop = bufferDiv.scrollHeight;
+
+        // 2. 更新 摘要 面板
+        let summaryLevel = 0;
+        if (s3Index >= 5) summaryLevel = 1;
+        if (s3Index >= 7) summaryLevel = 2;
+        if (s3Index >= 9) summaryLevel = 3;
+        if (s3Index >= 11) summaryLevel = 4;
+        const currentSummary = summaryEvolution[summaryLevel];
+        document.getElementById('s3-summary').innerHTML = currentSummary;
+
+        // 3. 更新 KV 状态机 面板
+        let currentKV = kvEvolution[0];
+        if (s3Index >= 1) currentKV = kvEvolution[1];
+        if (s3Index >= 2) currentKV = kvEvolution[2];
+        if (s3Index >= 8) currentKV = kvEvolution[3];
+        document.getElementById('s3-kv').innerText = JSON.stringify(currentKV, null, 2);
+
+        // 4. 生成双轨 Prompt 面板
+        const rawPrompt = `<System>你是高级架构师。严格遵循 CMDB 资产信息，不能偏离！</System>\n\n<CMDB_Entities_KV>\n${JSON.stringify(currentKV, null, 2)}\n</CMDB_Entities_KV>\n\n<Macro_Summary>\n${currentSummary.replace(/<[^>]+>/g, '')}\n</Macro_Summary>\n\n<Recent_Buffer>\n${s3BufferArr.map(m=>m.role+": "+m.text).join('\n')}\n</Recent_Buffer>`;
+        
+        const promptEl = document.getElementById('s3-prompt');
+        promptEl.innerHTML = formatXML(rawPrompt);
+        
+        // 特别高亮：让听众看到即使摘要丢了 IP，KV 里依然有
+        if (summaryLevel >= 3) {
+            promptEl.innerHTML = promptEl.innerHTML.replace('"10.0.0.51"', '<span class="highlight-keep">"10.0.0.51" (强力锁定!)</span>');
+        }
+
+        s3Index++;
+        if (s3Index >= dialogueScript.length) btnS3Next.disabled = true;
+    }
+
+    btnS3Next.addEventListener('click', updateS3View);
+    
+    document.getElementById('btn-s3-reset').addEventListener('click', () => {
+        s3Index = 0; s3BufferArr = []; btnS3Next.disabled = false; 
+        document.getElementById('s3-buffer').innerHTML = '';
+        document.getElementById('s3-counter').innerText = '0/4';
+        document.getElementById('s3-kv').innerText = '{}';
+        document.getElementById('s3-summary').innerHTML = '[暂无摘要...]';
+        document.getElementById('s3-prompt').innerHTML = '点击开始双轨推演...';
+    });
+
+    // --- 阶段四：RAG 与完全体 ---
+    document.getElementById('btn-s4-search').addEventListener('click', function() {
+        this.disabled = true;
+        const resultDiv = document.getElementById('rag-result');
+        const promptDiv = document.getElementById('s4-prompt');
+        
+        resultDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            resultDiv.innerHTML = `✅ <b>命中 VMware KB 知识库:</b> <br><br>当需重启 ESXi 代理服务而不影响虚机时，请通过 SSH 执行：<br><code>/etc/init.d/vpxa restart</code>`;
+            
+            // 组装神级 Prompt，使用打字机效果
+            const finalPrompt = `<System_Instruction>
+你是一个高级全栈 Infra 架构师。
+要求：
+1. 你的目标资产必须且只能是 <CMDB_Entities> 里的 IP。
+2. 修复操作必须严格依据 <RAG_Retrieved_Docs>，禁止捏造命令。
+</System_Instruction>
+
+<CMDB_Entities>
+{
+  "Target_IP": "10.0.0.51",
+  "Storage": "FC-SAN",
+  "Fault_Component": "vpxa_agent"
+}
+</CMDB_Entities>
+
+<Troubleshooting_Summary>
+某主机服务卡死，正在讨论重启的安全影响。
+</Troubleshooting_Summary>
+
+<RAG_Retrieved_Docs>
+【VMware KB-1003490】
+当需重启 ESXi 代理服务而不影响虚机数据流量时，请通过 SSH 登录执行：
+/etc/init.d/vpxa restart
+</RAG_Retrieved_Docs>
+
+<Recent_Buffer>
+User: 好的，我该敲什么命令重启？
+</Recent_Buffer>
+
+Assistant: `;
+            
+            promptDiv.innerHTML = "";
+            let i = 0;
+            let typeTimer = setInterval(() => {
+                promptDiv.innerHTML += finalPrompt.charAt(i);
+                i++;
+                if (i >= finalPrompt.length) {
+                    clearInterval(typeTimer);
+                    promptDiv.innerHTML = formatXML(finalPrompt);
+                    // 高亮终极输出
+                    promptDiv.innerHTML += `<br><br><span style="color:var(--green)">[AI 实际输出预判]：根据手册，请您 SSH 登录到 <b>10.0.0.51</b>，并执行命令 <b>/etc/init.d/vpxa restart</b>。</span>`;
+                }
+            }, 5);
+
+        }, 1500); // 模拟 1.5 秒的网络检索延迟
+    });
 </script>
 
-<style scoped>
-.hide-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-</style>
+</body>
+</html>
 ```
